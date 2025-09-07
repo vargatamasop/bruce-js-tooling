@@ -5494,7 +5494,7 @@ if (!Uint32Array.prototype.fill) {
   Uint32Array.prototype.fill = fill;
 }
 var COLOR_WHITE = display_1.default.color(255, 255, 255);
-function main() {
+async function main() {
   var nes = new index_js_1.NES();
   console.log("reading rom...");
   var romData = storage_1.default.read("/Super Mario Bros (E).nes", true);
@@ -5541,7 +5541,7 @@ function main() {
     nes.renderFrame();
     console.log("nes.renderFrame time:", now() - time);
     display_1.default.drawBitmap(0, -80, videoSprite, index_js_1.VIDEO_WIDTH, index_js_1.VIDEO_HEIGHT, 8);
-    // @preserve delay(24);
+    await delay(24);
   }
 }
 main();

@@ -1,6 +1,9 @@
-// @ts-nocheck
-import {log} from '../common';
-import {RESET, NMI} from './interrupts';
+import { APU } from '../audio';
+import { log } from '../common';
+import { CPUMemory, DMA } from '../memory';
+import Mapper from '../memory/mappers/Mapper';
+import { PPU } from '../video';
+import { RESET, NMI } from './interrupts';
 
 // CPU operation flags
 const F_EXTRA_CYCLE = 1 << 0; // Operation has +1 cycle
@@ -11,14 +14,36 @@ const RESET_ADDRESS = 0xFFFC;
 const NMI_ADDRESS = 0xFFFA;
 const IRQ_ADDRESS = 0xFFFE;
 
-// Table of all CPU operations
-const operations = new Array(0xFF);
+// Table of all CPU operations, changed to function
+const operations = new Array<[Function, Function, number]>(0xFF);
 
 export default class CPU {
 
   //=========================================================
   // Initialization
   //=========================================================
+
+  apu: APU;
+  ppu: PPU;
+  mapper: Mapper;
+  dma: DMA;
+  cpuMemory: CPUMemory;
+  halted: boolean;
+  operationFlags: number;
+  activeInterrupts: number;
+  irqDisabled: number;
+  pageCrossed: boolean;
+  programCounter: number;
+  stackPointer: number;
+  accumulator: number;
+  registerX: number;
+  registerY: number;
+  carryFlag: number;
+  zeroFlag: number;
+  interruptFlag: number;
+  decimalFlag: number;
+  overflowFlag: number;
+  negativeFlag: number;
 
   constructor() {
     log.info('Initializing CPU');
@@ -28,7 +53,7 @@ export default class CPU {
     this.operationFlags = 0;   // Flags of the currently executed operation
     this.activeInterrupts = 0; // Bitmap of active interrupts (each type of interrupt has its own bit)
     this.irqDisabled = 0;      // Value that is read from the interrupt flag (see below) at the start of last cycle of each instruction
-    this.pageCrossed = 0;      // Whether page was crossed during address computation
+    this.pageCrossed = false;      // Whether page was crossed during address computation
 
     // Registers
     this.programCounter = 0; // 16-bit address of the next instruction to read
@@ -116,7 +141,7 @@ export default class CPU {
   //=========================================================
 
   step() {
-    const blocked = this.dma.isBlockingCPU() || this.apu.isBlockingCPU();
+    const blocked = this.dma.isBlockingCPU(); //  || this.apu.isBlockingCPU()
     if (this.activeInterrupts && !blocked) {
       this.resolveInterrupt();
     }
@@ -182,17 +207,24 @@ export default class CPU {
   //=========================================================
 
   readAndExecuteOperation() {
-    const operation = this.readOperation();
-    if (operation) {
-      this.beforeOperation(operation);
-      this.executeOperation(operation);
+    const nextProgramByte = this.readNextProgramByte();
+    if (operations[nextProgramByte]) {
+      // this.beforeOperation(operation);
+      // this.executeOperation(operation);
+      
+      this.irqDisabled = this.interruptFlag;
+      this.operationFlags = operations[nextProgramByte][2];
+
+      const effectiveAddress = operations[nextProgramByte][1].call(this);
+      operations[nextProgramByte][0].call(this, effectiveAddress);
+
     } else {
       log.warn('CPU halted!');
       this.halted = true; // CPU halt (KIL operation code)
     }
   }
 
-  beforeOperation(operation) {
+  beforeOperation(operation: [Function, Function, number]) {
     // The interrupt flag is checked at the start of last cycle of each instruction.
     // RTI and BRK instructions set the flag before it's read, so the change is immediately visible.
     // CLI, SEI and PLP instructions set the flag after it's read, so the change is delayed.
@@ -201,13 +233,13 @@ export default class CPU {
     this.operationFlags = operation[2];
   }
 
-  executeOperation([instruction, addressingMode]) {
+  executeOperation([instruction, addressingMode, cycles]: [Function, Function, number]) {
     const effectiveAddress = addressingMode.call(this);
     instruction.call(this, effectiveAddress);
   }
 
   readOperation() {
-    return operations[this.readNextProgramByte()];
+    return ;
   }
 
   readNextProgramByte() {
@@ -218,7 +250,7 @@ export default class CPU {
     return this.readWord(this.moveProgramCounter(2));
   }
 
-  moveProgramCounter(size) {
+  moveProgramCounter(size: number) {
     const result = this.programCounter;
     this.programCounter = (this.programCounter + size) & 0xFFFF;
     return result;
@@ -228,7 +260,7 @@ export default class CPU {
   // Memory access
   //=========================================================
 
-  readByte(address) {
+  readByte(address: number): number {
     this.tick();
     return this.cpuMemory.read(address);
   }
@@ -292,12 +324,12 @@ export default class CPU {
 
   getStatus() {
     return this.carryFlag
-       | (this.zeroFlag << 1)
-       | (this.interruptFlag << 2)
-       | (this.decimalFlag << 3)
-       | (1 << 5)
-       | (this.overflowFlag << 6)
-       | (this.negativeFlag << 7);
+      | (this.zeroFlag << 1)
+      | (this.interruptFlag << 2)
+      | (this.decimalFlag << 3)
+      | (1 << 5)
+      | (this.overflowFlag << 6)
+      | (this.negativeFlag << 7);
   }
 
   setStatus(value) {
@@ -326,14 +358,13 @@ export default class CPU {
   //=========================================================
 
   tick() {
-    if (!this.apu.isBlockingDMA()) {
-      this.dma.tick();
-      this.mapper.tick();
-    }
-    this.ppu.tick(); // 3 times faster than CPU
+    // this.mapper.tick();
+     // ppu 3 times faster than CPU
+    this.dma.tick();
     this.ppu.tick();
     this.ppu.tick();
-    this.apu.tick(); // Same rate as CPU
+    this.ppu.tick();
+    // this.apu.tick(); // Same rate as CPU
   }
 
   //=========================================================
@@ -610,6 +641,7 @@ export default class CPU {
 
   BIT(address) {
     const value = this.readByte(address);
+    // @ts-expect-error
     this.zeroFlag = (!(this.accumulator & value)) | 0;
     this.overflowFlag = (value >>> 6) & 1;
     this.negativeFlag = value >>> 7;
@@ -877,6 +909,7 @@ export default class CPU {
 
   compareRegisterAndOperand(register, operand) {
     const result = register - operand;
+    // @ts-expect-error
     this.carryFlag = (result >= 0) | 0; // Unsigned comparison (bit 8 is actually the result sign)
     this.updateZeroAndNegativeFlag(result); // Not a signed comparison
     return result & 0xFF;
@@ -913,7 +946,8 @@ export default class CPU {
     return (value >>> 1) | carry;
   }
 
-  updateZeroAndNegativeFlag(value) {
+  updateZeroAndNegativeFlag(value: number) {
+    // @ts-expect-error
     this.zeroFlag = (!(value & 0xFF)) | 0;
     this.negativeFlag = (value >>> 7) & 1;
   }
@@ -933,11 +967,6 @@ function isDifferentPage(address1, address2) {
 //=========================================================
 
 const proto = CPU.prototype;
-
-//=========================================================
-// No operation instruction
-//=========================================================
-
 operations[0x1A] = [proto.NOP, proto.impliedMode, 0]; // 2 cycles
 operations[0x3A] = [proto.NOP, proto.impliedMode, 0]; // 2 cycles
 operations[0x5A] = [proto.NOP, proto.impliedMode, 0]; // 2 cycles

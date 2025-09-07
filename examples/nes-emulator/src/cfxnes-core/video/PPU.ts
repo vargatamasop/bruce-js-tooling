@@ -5,9 +5,67 @@ import {unpackColor, BLACK_COLOR} from './colors';
 import {createPaletteVariant} from './palettes';
 import * as Flag from './flags';
 import Sprite from './Sprite';
-import display from 'display';
+import { PPUMemory } from '../memory';
+import { CPU } from '../proc';
+
+const quickPallette = new Uint32Array([29614, 8401, 21, 16403, 34830, 43010, 40960, 30784, 16736, 544, 640, 482, 6635, 0, 0, 0, 48631, 925, 8669, 32798, 47127, 57355, 55616, 51809, 35712, 1184, 1344, 1159, 1041, 0, 0, 0, 65535, 15871, 23743, 52319, 62431, 64438, 64428, 64711, 62951, 34434, 20201, 24531, 1883, 31695, 0, 0, 65535, 44863, 50879, 54879, 65087, 65083, 65014, 65237, 65332, 59380, 44951, 47097, 40958, 50744, 0, 0]);
 
 export default class PPU {
+  scanline: number;
+  cycle: number;
+  cycleFlags: number;
+  oddFrame: boolean;
+  addressBus: number;
+  clipTopBottom: boolean;
+  vblankActive: boolean;
+  vblankSuppressed: boolean;
+  nmiSuppressed: boolean;
+  nmiDelay: number;
+  frameBuffer: Uint8Array;
+  frameAvailable: boolean;
+  framePosition: number;
+  basePalette: null;
+  paletteVariants: any[];
+  palette: any[];
+  spriteCount: number;
+  spriteNumber: number;
+  spriteCache: any[];
+  spritePixelCache: Uint8Array;
+  primaryOAM: Uint8Array;
+  secondaryOAM: any[];
+  oamAddress: number;
+  tempAddress: number;
+  vramAddress: number;
+  vramReadBuffer: number;
+  writeToggle: boolean;
+  fineXScroll: number;
+  patternBuffer0: number;
+  patternBuffer1: number;
+  paletteBuffer0: number;
+  paletteBuffer1: number;
+  paletteLatch0: number;
+  paletteLatch1: number;
+  patternBufferNext0: number;
+  patternBufferNext1: number;
+  paletteLatchNext0: number;
+  paletteLatchNext1: number;
+  patternRowAddress: number;
+  bigAddressIncrement: number;
+  spPatternTableAddress: number;
+  bgPatternTableAddress: number;
+  bigSprites: number;
+  nmiEnabled: number;
+  monochromeMode: number;
+  backgroundClipping: number;
+  spriteClipping: number;
+  backgroundVisible: number;
+  spritesVisible: number;
+  colorEmphasis: number;
+  spriteOverflow: number;
+  spriteZeroHit: number;
+  vblankFlag: number;
+  cpu: CPU;
+  ppuMemory: PPUMemory;
 
   //=========================================================
   // Initialization
@@ -412,6 +470,11 @@ export default class PPU {
     this.framePosition = 0;
     this.frameAvailable = false;
   }
+  
+  resetFrameBuffer() {
+    this.framePosition = 0;
+    this.frameAvailable = false;
+  }
 
   isFrameAvailable() {
     return this.frameAvailable;
@@ -425,21 +488,21 @@ export default class PPU {
   //   return r > 0x12 || g > 0x12 || b > 0x12;
   // }
 
-  setFramePixel(color) {
+  setFramePixel(color: number) {
     const x = this.framePosition % VIDEO_WIDTH;
-    const y = Math.floor(this.framePosition / VIDEO_WIDTH);
-    this.frameBuffer.drawPixel(x, y, this.palette[color & 0x3F]); // Only 64 colors
+    const y = (this.framePosition / VIDEO_WIDTH)|0;
+    this.frameBuffer[x + y * VIDEO_WIDTH] = color;
     this.framePosition++;
   }
 
-  setFramePixelOnPosition(x, y, color) {
-    this.frameBuffer.drawPixel(x, y, this.palette[color & 0x3F]); // Only 64 colors
+  setFramePixelOnPosition(x: number, y: number, color: number) {
+    this.frameBuffer[x + y * VIDEO_WIDTH] = color;
   }
 
   clearFramePixel() {
     const x = this.framePosition % VIDEO_WIDTH;
-    const y = Math.floor(this.framePosition / VIDEO_WIDTH);
-    this.frameBuffer.drawPixel(x, y, BLACK_COLOR);
+    const y = (this.framePosition / VIDEO_WIDTH)|0;
+    this.frameBuffer[x + y * VIDEO_WIDTH] = BLACK_COLOR;
     this.framePosition++;
   }
 
@@ -503,11 +566,17 @@ export default class PPU {
     this.scanline++;
 
     if (this.scanline > 261) {
-      this.incrementFrame();
+      // incrementFrame();
+      this.scanline = 0;
+      this.oddFrame = !this.oddFrame;
+      this.framePosition = 0;
     }
 
     if (this.scanline <= 239) {
       this.clearSprites();
+      // @ts-ignore
+      this.spriteCache.fill(null);
+      this.spritePixelCache.fill(0);
 
       if (this.scanline > 0) {
         this.preRenderSprites(); // Sprites are not rendered on scanline 0

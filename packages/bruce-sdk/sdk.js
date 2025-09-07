@@ -30,6 +30,7 @@ async function build(config) {
     minifyIdentifiers: config.minify,
     minifySyntax: false,
     target: 'es5',
+    legalComments: 'inline',
     external: [
       'audio',
       'badusb',
@@ -131,12 +132,7 @@ async function start(config) {
         (device?.vendorId === '1A86' && device?.productId === '55D4'),
     );
 
-  if (!m5Sticks.length) {
-    console.log('Bruce devices not found');
-    return;
-  }
-
-  let { path } = m5Sticks[0];
+  let path = m5Sticks?.[0]?.path;
   if (m5Sticks.length > 1) {
     path = (
       await prompts([
@@ -148,7 +144,19 @@ async function start(config) {
         },
       ])
     ).port;
+  } else if (m5Sticks.length === 0) {
+    path = (
+      await prompts([
+        {
+          type: 'select',
+          name: 'port',
+          message: 'Select Bruce device to run the app on',
+          choices: SerialPortDevices.map((x) => ({ title: x.path, value: x.path })),
+        },
+      ])
+    ).port;
   }
+  
 
   const serialport = new SerialPort({
       path: path,

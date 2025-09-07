@@ -39,7 +39,7 @@ export default class CPUMemory {
     this.prgROMMapping = new Uint32Array(4); // Base addresses of each 8K PRG ROM bank
     this.prgRAMMapping = 0; // Base address of 8K PRG RAM bank
 
-    this.inputDevices = [null, null, null]; // Indices 1 and 2 are used as ports for devices
+    this.inputDevice = null; // Indices 1 and 2 are used as ports for devices
     this.inputStrobe = 0; // Strobe counter
 
     this.ppu = null;
@@ -194,15 +194,15 @@ export default class CPUMemory {
 
   setInputDevice(port, device) {
     log.info(`${device != null ? 'Setting' : 'Clearing'} device connected to CPU memory on port #${port}`);
-    this.inputDevices[port] = device;
+    this.inputDevice = device;
   }
 
   getInputDevice(port) {
-    return this.inputDevices[port];
+    return this.inputDevice;
   }
 
   readInputDevice(port) {
-    const device = this.inputDevices[port];
+    const device = this.inputDevice;
     return device ? device.read() : 0;
   }
 
@@ -216,7 +216,7 @@ export default class CPUMemory {
   }
 
   strobeInputDevice(port) {
-    const device = this.inputDevices[port];
+    const device = this.inputDevice;
     if (device) {
       device.strobe();
     }

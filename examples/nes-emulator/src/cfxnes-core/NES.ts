@@ -6,6 +6,7 @@ import {APU} from './audio';
 import Mapper from './memory/mappers/Mapper';
 import { Cartridge } from './cartridge/create';
 import display from 'display';
+import { Joypad, Zapper } from './devices';
 
 export default class NES {
   cpu: CPU;
@@ -137,7 +138,7 @@ export default class NES {
   // Input devices
   //=========================================================
 
-  setInputDevice(port, device) {
+  setInputDevice(port, device: Joypad | Zapper) {
     const oldDevice = this.cpuMemory.getInputDevice(port);
     if (oldDevice) {
       oldDevice.disconnect();
@@ -164,15 +165,44 @@ export default class NES {
     return this.ppu.getBasePalette();
   }
 
-  renderFrame(buffer) {
-    if (this.cartridge) {
-      this.ppu.setFrameBuffer(buffer);
-      while (!this.ppu.isFrameAvailable()) {
-        this.cpu.step();
-      }
-    } else {
-      this.renderWhiteNoise(buffer);
+  setFrameBuffer(buffer) {
+    this.ppu.setFrameBuffer(buffer);
+  }
+
+  renderFrame() {
+    this.ppu.resetFrameBuffer();
+    let time = now();
+    while (!this.ppu.isFrameAvailable()) {
+      this.cpu.step();
+
+      // this.cpu.dma.tick();
+      // // if (this.cpu.dma.cycle < 512) { // this.cpu.dma.isBlockingCPU()
+      // //   this.cpu.dma.cycle++;
+      // //   if (this.cpu.dma.cycle & 1) {
+      // //     // this.cpu.dma.transferData(); // Each even cycle
+      // //     const address = this.cpu.dma.baseAddress + (this.cpu.dma.cycle >> 1);
+      // //     const data = this.cpuMemory.read(address);
+      // //     this.cpuMemory.write(0x2004, data);
+          
+      // //     // if (address >= 0x8000) {
+      // //     //   this.cpuMemory.writePRGROM(address, data);    // $8000-$FFFF
+      // //     // } else if (address < 0x2000) {
+      // //     //   this.cpuMemory.writeRAM(address, data);       // $0000-$1FFF
+      // //     //   // this.cpuMemory.ram[address & 0x07FF] = data;
+      // //     // } else if (address < 0x4020) {
+      // //     //   this.cpuMemory.writeRegister(address, data); // $2000-$401F
+      // //     // } else if (address >= 0x6000) {
+      // //     //   this.cpuMemory.writePRGRAM(address, data);    // $6000-$7FFF
+      // //     // } else {
+      // //     //   this.cpuMemory.writeEXROM(address, data);     // $4020-$5FFF
+      // //     // }
+      // //   }
+      // // }
+      // this.cpu.ppu.tick();
+      // this.cpu.ppu.tick();
+      // this.cpu.ppu.tick();
     }
+    console.log('this.ppu.isFrameAvailable time:', now() - time);
   }
 
   renderDebugFrame(buffer) {

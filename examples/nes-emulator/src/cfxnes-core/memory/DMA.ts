@@ -1,8 +1,12 @@
 import {log} from '../common';
+import CPUMemory from './CPUMemory';
 
-const TOTAL_DMA_CYCLES = 512;
+// const TOTAL_DMA_CYCLES = 512;
 
 export default class DMA {
+  cycle: number;
+  baseAddress: number;
+  cpuMemory: CPUMemory;
 
   constructor() {
     log.info('Initializing DMA');
@@ -18,7 +22,7 @@ export default class DMA {
 
   reset() {
     log.info('Resetting DMA');
-    this.cycle = TOTAL_DMA_CYCLES;
+    this.cycle = 512; // TOTAL_DMA_CYCLES
   }
 
   writeAddress(address) {
@@ -27,7 +31,7 @@ export default class DMA {
   }
 
   tick() {
-    if (this.isBlockingCPU()) {
+    if (this.cycle < 512) { // this.isBlockingCPU()
       this.cycle++;
       if (this.cycle & 1) {
         this.transferData(); // Each even cycle
@@ -36,7 +40,7 @@ export default class DMA {
   }
 
   isBlockingCPU() {
-    return this.cycle < TOTAL_DMA_CYCLES;
+    return this.cycle < 512; // TOTAL_DMA_CYCLES
   }
 
   transferData() {

@@ -6,7 +6,7 @@ const SHIFT = [24, 16, 8, 0];
 
 export default function sha1(data) {
   const {length} = data;
-  const blocks = new Array(17);
+  const blocks = new Uint8Array(17);
 
   let block = 0;
   let index = 0;

@@ -10,3 +10,5 @@ examples/*
 !examples/dino
 !examples/nes-emulator
 !examples/test-bruce-js
+
+/bruce-emulator/src/storage.js

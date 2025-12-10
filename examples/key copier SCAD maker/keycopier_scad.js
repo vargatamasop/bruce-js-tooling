@@ -3,33 +3,12 @@ var keyboard = require('keyboard');
 var storage = require('storage');
 
 // ===================================================================================
-// 1. TELJES KULCS ADATBÁZIS (Bővítve: Elzett & JMA/Universal)
+// 1. TELJES KULCS ADATBÁZIS (Bővítve: Elzett & JMA/Universal & Rittal)
 // ===================================================================================
 var KEY_DB = [
-    // --- MAGYAR / EURÓPAI KULCSOK ---
-    { 
-        manufacturer: "Elzett", 
-        format_name: "751 (Euro)", 
-        pin_num: 5, 
-        // 4.5mm start, 4.0mm köz, 0.5mm mélység lépés
-        first_pin_inch: 0.177, last_pin_inch: 0.807, pin_increment_inch: 0.1575, 
-        pin_width_inch: 0.039, elbow_inch: 0.118, drill_angle: 90, 
-        uncut_depth_inch: 0.338, deepest_depth_inch: 0.197, depth_step_inch: 0.0197, 
-        min_depth_ind: 1, max_depth_ind: 6 
-    },
-    { 
-        manufacturer: "Universal", 
-        format_name: "JMA / Euro", 
-        pin_num: 5, 
-        // Szabványos Euro profil (gyakran JMA U-5D)
-        // Kicsit szűkebb kezdés (4.0mm) mint az Elzettnél
-        first_pin_inch: 0.157, last_pin_inch: 0.787, pin_increment_inch: 0.1575, 
-        pin_width_inch: 0.039, elbow_inch: 0.118, drill_angle: 90, 
-        uncut_depth_inch: 0.335, deepest_depth_inch: 0.197, depth_step_inch: 0.020, 
-        min_depth_ind: 1, max_depth_ind: 6 
-    },
-
-    // --- AMERIKAI / NEMZETKÖZI KULCSOK ---
+    { manufacturer: "Elzett", format_name: "751 (Euro)", pin_num: 5, first_pin_inch: 0.177, last_pin_inch: 0.807, pin_increment_inch: 0.1575, pin_width_inch: 0.039, elbow_inch: 0.118, drill_angle: 90, uncut_depth_inch: 0.338, deepest_depth_inch: 0.197, depth_step_inch: 0.0197, min_depth_ind: 1, max_depth_ind: 6 },
+    { manufacturer: "Universal", format_name: "JMA / Euro", pin_num: 5, first_pin_inch: 0.157, last_pin_inch: 0.787, pin_increment_inch: 0.1575, pin_width_inch: 0.039, elbow_inch: 0.118, drill_angle: 90, uncut_depth_inch: 0.335, deepest_depth_inch: 0.197, depth_step_inch: 0.020, min_depth_ind: 1, max_depth_ind: 6 },
+    { manufacturer: "Rittal", format_name: "3524 E", pin_num: 4, first_pin_inch: 0.138, last_pin_inch: 0.650, pin_increment_inch: 0.138, pin_width_inch: 0.060, elbow_inch: 0.100, drill_angle: 90, uncut_depth_inch: 0.331, deepest_depth_inch: 0.177, depth_step_inch: 0.031, min_depth_ind: 1, max_depth_ind: 5 },
     { manufacturer: "Kwikset", format_name: "KW1", first_pin_inch: 0.247, last_pin_inch: 0.847, pin_increment_inch: 0.15, pin_num: 5, pin_width_inch: 0.084, elbow_inch: 0.15, drill_angle: 90, uncut_depth_inch: 0.329, deepest_depth_inch: 0.191, depth_step_inch: 0.023, min_depth_ind: 1, max_depth_ind: 7 },
     { manufacturer: "Schlage", format_name: "SC4", first_pin_inch: 0.231, last_pin_inch: 1.012, pin_increment_inch: 0.1562, pin_num: 6, pin_width_inch: 0.031, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.335, deepest_depth_inch: 0.2, depth_step_inch: 0.015, min_depth_ind: 0, max_depth_ind: 9 },
     { manufacturer: "Yale", format_name: "Y11", first_pin_inch: 0.124, last_pin_inch: 0.502, pin_increment_inch: 0.095, pin_num: 5, pin_width_inch: 0.039, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.246, deepest_depth_inch: 0.167, depth_step_inch: 0.020, min_depth_ind: 1, max_depth_ind: 5 },
@@ -40,12 +19,15 @@ var KEY_DB = [
     { manufacturer: "Sargent", format_name: "S22", first_pin_inch: 0.216, last_pin_inch: 0.996, pin_increment_inch: 0.156, pin_num: 6, pin_width_inch: 0.063, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.328, deepest_depth_inch: 0.148, depth_step_inch: 0.020, min_depth_ind: 1, max_depth_ind: 10 },
     { manufacturer: "Corbin", format_name: "CO88", first_pin_inch: 0.250, last_pin_inch: 1.030, pin_increment_inch: 0.156, pin_num: 6, pin_width_inch: 0.047, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.343, deepest_depth_inch: 0.217, depth_step_inch: 0.014, min_depth_ind: 1, max_depth_ind: 10 },
     { manufacturer: "Lockwood", format_name: "LW4", first_pin_inch: 0.245, last_pin_inch: 0.870, pin_increment_inch: 0.1562, pin_num: 5, pin_width_inch: 0.031, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.344, deepest_depth_inch: 0.203, depth_step_inch: 0.014, min_depth_ind: 0, max_depth_ind: 9 },
+    { manufacturer: "Lockwood", format_name: "LW5", first_pin_inch: 0.245, last_pin_inch: 1.0262, pin_increment_inch: 0.1562, pin_num: 6, pin_width_inch: 0.031, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.344, deepest_depth_inch: 0.203, depth_step_inch: 0.014, min_depth_ind: 0, max_depth_ind: 9 },
+    { manufacturer: "National", format_name: "NA12", first_pin_inch: 0.150, last_pin_inch: 0.710, pin_increment_inch: 0.140, pin_num: 5, pin_width_inch: 0.039, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.270, deepest_depth_inch: 0.157, depth_step_inch: 0.013, min_depth_ind: 0, max_depth_ind: 9 },
+    { manufacturer: "National", format_name: "NA25", first_pin_inch: 0.250, last_pin_inch: 0.874, pin_increment_inch: 0.156, pin_num: 5, pin_width_inch: 0.039, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.304, deepest_depth_inch: 0.191, depth_step_inch: 0.012, min_depth_ind: 0, max_depth_ind: 9 },
+    { manufacturer: "Russwin", format_name: "RU45", first_pin_inch: 0.250, last_pin_inch: 1.030, pin_increment_inch: 0.156, pin_num: 6, pin_width_inch: 0.053, elbow_inch: 0.1, drill_angle: 90, uncut_depth_inch: 0.343, deepest_depth_inch: 0.203, depth_step_inch: 0.028, min_depth_ind: 1, max_depth_ind: 6 },
     { manufacturer: "Weiser", format_name: "WR3", first_pin_inch: 0.237, last_pin_inch: 0.861, pin_increment_inch: 0.156, pin_num: 5, pin_width_inch: 0.090, elbow_inch: 0.150, drill_angle: 90, uncut_depth_inch: 0.315, deepest_depth_inch: 0.153, depth_step_inch: 0.018, min_depth_ind: 0, max_depth_ind: 10 }
 ];
 
-
 // ==========================================
-// 2. SCAD GENERÁLÁS (Template alapú)
+// 2. SCAD GENERÁLÁS (TEMPLATE ALAPÚ)
 // ==========================================
 function generateSCAD(keyCodes, format) {
     var bits = [];
@@ -181,7 +163,14 @@ function main() {
                 currentKeyIdx++;
                 if (currentKeyIdx >= KEY_DB.length) currentKeyIdx = 0;
                 initCodeForFormat(currentKeyIdx);
-                statusMsg = "Type: " + KEY_DB[currentKeyIdx].format_name;
+                
+                // Rittal Auto-Set
+                if (KEY_DB[currentKeyIdx].manufacturer === "Rittal") {
+                    code[0] = 3; code[1] = 5; code[2] = 2; code[3] = 4;
+                    statusMsg = "Auto: Rittal 3524";
+                } else {
+                    statusMsg = "Type: " + KEY_DB[currentKeyIdx].format_name;
+                }
                 msgTimer = 30;
             }
             else if (menuCursor === 3) { break; }
@@ -207,31 +196,27 @@ function main() {
     sprite.setTextSize(1);
     sprite.drawText(format.manufacturer + " " + format.format_name, 2, 2);
 
-    // --- SKÁLÁZÁS (M5STICK) ---
+    // --- SKÁLÁZÁS ---
     var shoulderX = 0; 
-    var maxDisplayWidth = dw; 
-    // Gerinc alul (hogy ne lógjanak bele a számok)
-    var spineY = dh - 20; 
+    var spineY = dh - 20; // Gerinc alul
     
+    var maxDisplayWidth = dw; 
     var keyTotalLenInch = format.last_pin_inch + format.elbow_inch;
-    // PPI úgy, hogy beleférjen a képernyőbe
     var ppi = maxDisplayWidth / (keyTotalLenInch + 0.1);
     
     var bladeHeightPx = format.uncut_depth_inch * ppi;
     var topY = spineY - bladeHeightPx;
     
-    // 1. Gerinc és Váll
+    // Gerinc és Váll
     var keyEndPx = keyTotalLenInch * ppi;
     sprite.drawLine(shoulderX, spineY, Math.round(keyEndPx), spineY, fg_color);
     sprite.drawLine(shoulderX, spineY, shoulderX, Math.round(topY), fg_color);
     
     var lastY = topY; 
     
-    // --- MARÁS SZIMULÁCIÓ (Pixel Sweep) ---
-    // Ez biztosítja a pontos, V-alakú vágásokat és a helyes kezdőpozíciót
-    
+    // --- MARÁS SZIMULÁCIÓ ---
     for (var x = 0; x <= keyEndPx; x++) {
-        var maxY = topY; // Alap: nyers magasság (felső él)
+        var maxY = topY; 
         
         for (var i = 0; i < format.pin_num; i++) {
             var pinCenterInch = format.first_pin_inch + (i * format.pin_increment_inch);
@@ -239,8 +224,6 @@ function main() {
             
             var depthInd = code[i] - format.min_depth_ind;
             var cutDepthInch = depthInd * format.depth_step_inch;
-            
-            // Mennyire mély a vágás pixelben (fentről lefelé mérve)
             var cutDepthPx = cutDepthInch * ppi;
             var cutBottomY = topY + cutDepthPx;
             
@@ -250,35 +233,27 @@ function main() {
             var thisY = topY; 
             
             if (dist <= halfFlatW) {
-                // Lapos alj
                 thisY = cutBottomY;
             } else {
-                // Ferde oldal (V-alak)
-                // 90 fok -> 45 fokos oldalfal -> 1:1 emelkedés
                 var rise = dist - halfFlatW; 
                 thisY = cutBottomY - rise;
             }
             
-            // Boolean kivonás: A legmélyebb vágás érvényesül az adott ponton
-            // Mivel Y lefelé nő, a nagyobb Y = mélyebb vágás.
             if (thisY > maxY) maxY = thisY;
         }
         
-        // Csak a gerincig mehet le
         if (maxY > spineY) maxY = spineY;
         
-        // Vonal húzása
         if (x > 0) {
             sprite.drawLine(x - 1, Math.round(lastY), x, Math.round(maxY), fg_color);
         }
         lastY = maxY;
     }
     
-    // Tip (Hegy) lezárása
-    // Egy függőleges vonal a végén a gerincig
+    // Tip lezárása
     sprite.drawLine(Math.round(keyEndPx), Math.round(lastY), Math.round(keyEndPx), spineY, fg_color);
 
-    // Számok kiírása
+    // Számok kiírása (JAVÍTVA: Soha nem megy ki a képből)
     sprite.setTextSize(2);
     for(var i=0; i<format.pin_num; i++) {
         var pinCenterInch = format.first_pin_inch + (i * format.pin_increment_inch);
@@ -287,8 +262,8 @@ function main() {
         var s = code[i].toString();
         if (i === cursor && mode === MODE_EDIT) s = "["+s+"]";
         
-        // A számokat fixen a kulcs fölé rakjuk (topY fölé)
-        var textY = Math.max(2, Math.round(topY) - 25);
+        // JAVÍTÁS: Minimum 15 pixelre legyen a tetőtől, hogy látszódjon
+        var textY = Math.max(15, Math.round(topY) - 20);
         sprite.drawText(s, Math.round(pinCenterPx) - 5, textY);
     }
 
